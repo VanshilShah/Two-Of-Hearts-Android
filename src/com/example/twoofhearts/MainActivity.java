@@ -1,9 +1,14 @@
 package com.example.twoofhearts;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -24,8 +29,9 @@ import com.ibm.mobile.services.data.IBMQuery;
 public class MainActivity extends Activity {
 	ToggleButton update;
 	public static Heart me, mate;
-	Intent mServiceIntent;
-	
+	public static String meId = null, mateId = null;
+	public static List<Heart> allHearts;
+	public static MainActivityPanel panel;
 	public static final String 	APPLICATION_ID = "6aeac2ca-d271-45fd-9e8e-479f887fc9ba", 
 			APPLICATION_SECRET = "ac068179f3cf2e41da78b1c9a1f87108fde1577c", 
 			APPLICATION_ROUTE = "http://two-of-hearts.mybluemix.net";
@@ -37,9 +43,11 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         ll = new LinearLayout(this);
-        ll.addView(new MainActivityPanel(this));
+        panel = new MainActivityPanel(this);
+        ll.addView(panel);
         setContentView(ll);
-        update = (ToggleButton) findViewById(R.id.update);
+		me = new Heart();
+		loadLocalData();
     }
     
 	    private void initBluemix() {
@@ -52,29 +60,88 @@ public class MainActivity extends Activity {
 	    	this.startService(mServiceIntent);
 	    }
 	    */
-    @Override
-	protected void onStart(){
+	 @Override
+	 protected void onStart(){
 		super.onStart();
+		allHearts = new ArrayList<Heart>();
 		initBluemix();
+		loadLocalData();
+		panel.up = true;	
+		
+		/*me.setName("Vanshil");
+		me.setFormAnswers("asdsd34 234nwemsfd");
+		me.setLocation("Canada");
+*/
+		/*me.setName("Ben");
+		me.setFormAnswers("beasdasda");
+		me.setLocation("China");*/
 		
 		
-		long lastTime = 0;
+		
+		/*
+        initHeart(me);
+        initHeart(mate);*/
+		//initBackground();
+	}
+     public void loadLocalData(){
+    	String FILENAME = "id_file";
+    	
+    	try {
+			FileInputStream fis = openFileInput(FILENAME);
+			byte[] buffer = new byte[fis.available()];
+			fis.read(buffer);
+			meId = new String(buffer);
+			Log.v("file input", meId);
+			new RegularUpdate().execute();
+			fis.close();
+			
+		} catch (IOException e) {
+			
+			//if the file isn't found, create a new one.
+	    	try {
+		    	FileOutputStream fos = openFileOutput(FILENAME, Context.MODE_PRIVATE);
+		    	fos.write(me.getObjectId().getBytes());
+				Log.v("file output", me.getObjectId());
+				saveHeart();
+		    	fos.close();
+	    	}
+	    	catch(IOException f){
+	    		f.printStackTrace();
+	    	}
+			
+			e.printStackTrace();
+		}
+    }
+	
+    	public static Heart getBestMate(){
+    		Heart bestMate = null;
+    		int bestScore = 0;
+    		for(Heart h : allHearts){
+    			if(scoreMate(h) > bestScore){
+    				bestMate = h;
+    			}
+    		}
+    		return bestMate;
+    	}
+    		public static int scoreMate(Heart mate){
+				return 5;    			
+    		}
+    
+    public static void regularUpdate(){
+	/*	long lastTime = 0;
 		long currTime = System.currentTimeMillis();
 		while(true){
 			currTime = System.currentTimeMillis();
-			if(currTime - lastTime > UPDATE_DELAY){
+			if(currTime - lastTime > UPDATE_DELAY){*/
 				
-				new DownloadFilesTask().execute();
-				lastTime = System.currentTimeMillis();
+				new RegularUpdate().execute();
+			/*	lastTime = System.currentTimeMillis();
 			}
 			currTime = System.currentTimeMillis();
 			
-		}
-		
-       
-		//initBackground();
-	}
-    
+		}*/
+    }
+
 	public static void saveHeart(){
         Log.d("BLUEMIX", "save initialized");
         me.save().continueWith(new Continuation<IBMDataObject, Void>() {
@@ -92,11 +159,21 @@ public class MainActivity extends Activity {
 	                return null;
 	            }
 	        });
-        
-	}
 
+	}
 	
-    
+    public void openSignUp() {
+	    Intent intent = new Intent(this, SignUpActivity.class);
+	    this.startActivity(intent);
+	}
+	public void openLogin() {
+	    Intent intent = new Intent(this, LoginActivity.class);
+	    this.startActivity(intent);
+	}
+	public void openAccount() {
+	    Intent intent = new Intent(this, AccountActivity.class);
+	    this.startActivity(intent);
+	}
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -118,19 +195,12 @@ public class MainActivity extends Activity {
 }
 // end main activity *********************************************************
 
-
-
-
-
-
-
-
-class DownloadFilesTask extends AsyncTask<URL, Integer, Long> {
+class RegularUpdate extends AsyncTask<URL, Integer, Long> {
 	
-	public void downloadMate(Heart heart){
-	 Log.v("download", "before1"); 
+	public void downloadMe(String personId){
+	 Log.v("downloadMe", "started"); 
      IBMQuery<Heart> query = null;        
-     query = IBMQuery.queryForObjectId("e90f349c-dec1-40b4-a5bd-d69677403ec1");
+     query = IBMQuery.queryForObjectId(personId);
      /*
      try {
 			query = IBMQuery.queryForClass(Heart.class);
@@ -144,50 +214,119 @@ class DownloadFilesTask extends AsyncTask<URL, Integer, Long> {
      	
              @Override
              public Void then(Task<List<Heart>> task) throws Exception {
-                 Log.v("download", "before");
                  
                  List<Heart> objectsList = task.getResult();
                  
-                 Log.v("queries retrieved = ", ""+objectsList.size());
+                 Log.v("Me : queries retrieved = ", ""+objectsList.size());             
+             	 
+                 Log.d("Me : BLUEMIX name = ", MainActivity.me.getName());
                  
-                 
-                 for(Heart j: objectsList){                       
-                	 MainActivity.me = j;                         
-                 }    
-                                 
-                 Log.d("BLUEMIX name = ", MainActivity.me.getName());
-                 
-                  
-			
-		   		 
+                 for(Heart j : objectsList){
+             		 MainActivity.me = j;
+             	 }		   		 
 		   	     
-		   	     long testing = 0;
-		   	     onPostExecute(testing);
-		   	     
-		   	  Log.v("download", "end"); 
-		   	  
-		   	  
+                 long testing = 0;
+          	     onPostExecute(testing);	   	 
 			   	  return null;
              }
      });
 	}
-	
-    protected void onProgressUpdate(Integer... progress) {
+	public void downloadMate(String personId){
+		 Log.v("downloadMate","started"); 
+	     IBMQuery<Heart> query = null;        
+	     query = IBMQuery.queryForObjectId(personId);
+	     /*
+	     try {
+				query = IBMQuery.queryForClass(Heart.class);
+			} catch (IBMDataException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		*/
+	     // Query all the Jobs objects from the server
+	     query.find().continueWith(new Continuation<List<Heart>, Void>() {
+	     	
+	             @Override
+	             public Void then(Task<List<Heart>> task) throws Exception {
+	               
+	                 List<Heart> objectsList = task.getResult();
+	                 
+	                 Log.v("Mate : queries retrieved = ", ""+objectsList.size());
+	                 
+	                 
+	             	 for(Heart j : objectsList){
+	             		 MainActivity.mate = j;
+	             	 }
+	             	 
+	                 Log.d("Mate : BLUEMIX name = ", MainActivity.mate.getName());   			   	  
+	                 long testing = 0;
+	          	     onPostExecute(testing);
+				   	  return null;
+	             }
+	     });
+		}
+	public void downloadAll(){
+		 Log.v("downloadAll", "started"); 
+	     IBMQuery<Heart> query = null;        
+	     
+	     try {
+				query = IBMQuery.queryForClass(Heart.class);
+			} catch (IBMDataException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		
+	     // Query all the Jobs objects from the server
+	     query.find().continueWith(new Continuation<List<Heart>, Void>() {
+	     	
+	             @Override
+	             public Void then(Task<List<Heart>> task) throws Exception {
+	                 
+	                 List<Heart> objectsList = task.getResult();
+	                 
+	                 Log.v("All : queries retrieved = ", ""+objectsList.size());
+	                 
+	             	 for(Heart j : objectsList){
+	             		 if(!j.equals(MainActivity.me)){
+	             			MainActivity.allHearts.add(j);
+	             		 }	             		 
+	             	 }                            
+						   		 			   
+			   	     
+			   	  Log.v("download", "end"); 
+			   	long testing = 0;
+		  	     onPostExecute(testing);
+			   	  
+				   	  return null;
+	             }
+	     });
+	}
+	protected void onProgressUpdate(Integer... progress) {
         //setProgressPercent(progress[0]);
     	
     }
 
     protected void onPostExecute(Long result) {
         //showDialog("Downloaded " + result + " bytes");
-    	MainActivity.me.setMateName("CHELSEA");
+    	if(MainActivity.mateId == null){
+    		if(MainActivity.allHearts.size()>0){
+    	    		MainActivity.mateId = MainActivity.getBestMate().getObjectId();
+    	    		MainActivity.me.setMateName(MainActivity.mateId);
+    	    		Log.v("MATE", "Added : " +  MainActivity.mateId);
+    		}	
+    		else{
+        		downloadAll();
+    		}
+    	}
   	    MainActivity.saveHeart();
-    	
     }
 
 	@Override
 	protected Long doInBackground(URL... params) {
 		// TODO Auto-generated method stub
-		downloadMate(MainActivity.me);
+		downloadMe(MainActivity.meId);
+		downloadMate(MainActivity.mateId);	     
+  	     
 		return null;
 	}
 }

@@ -1,6 +1,7 @@
 package com.example.twoofhearts;
 
 import android.graphics.Canvas;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -22,11 +23,13 @@ class PanelThread extends Thread {
         _run = run;
     }
 
+    int count;
     @Override
     public void run() {
         Canvas c;
         while (_run) { // when setRunning(false) occurs, _run is
-            c = null;  // set to false and loop ends, stopping thread
+        	c = null;  // set to false and loop ends, stopping thread
+        	
             try {
                 c = _surfaceHolder.lockCanvas(null);
                 synchronized (_surfaceHolder) {
@@ -39,10 +42,8 @@ class PanelThread extends Thread {
             }
         }
     }
-    
     public void update() {
         _panel.postInvalidate();
-        
     }
     
     public void sendEvent(MotionEvent e) {
