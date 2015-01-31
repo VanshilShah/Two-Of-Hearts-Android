@@ -6,8 +6,8 @@ import com.ibm.mobile.services.data.IBMDataObjectSpecialization;
 
 @IBMDataObjectSpecialization("Heart")
 public class Heart extends IBMDataObject {
-    private final String  formAnswers = "Form Answers", name = "Name", 
-    		mateName = "Mate Name", location = "Location";
+    private final String  formAnswers = "FormAnswers", name = "Name", 
+    		mateName = "MateName", location = "Location";
     
     public String getFormAnswers() {
         return (String) getObject(formAnswers);

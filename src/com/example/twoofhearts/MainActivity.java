@@ -1,15 +1,16 @@
 package com.example.twoofhearts;
 
+import java.net.URL;
 import java.util.List;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.ToggleButton;
 import bolts.Continuation;
 import bolts.Task;
@@ -22,17 +23,22 @@ import com.ibm.mobile.services.data.IBMQuery;
 
 public class MainActivity extends Activity {
 	ToggleButton update;
-	public Heart me, mate;
+	public static Heart me, mate;
 	Intent mServiceIntent;
+	
 	public static final String 	APPLICATION_ID = "6aeac2ca-d271-45fd-9e8e-479f887fc9ba", 
 			APPLICATION_SECRET = "ac068179f3cf2e41da78b1c9a1f87108fde1577c", 
 			APPLICATION_ROUTE = "http://two-of-hearts.mybluemix.net";
 
-    @Override
+
+    LinearLayout ll;
+	private static final int UPDATE_DELAY = 2500;
+	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        me = new Heart();
+        ll = new LinearLayout(this);
+        ll.addView(new MainActivityPanel(this));
+        setContentView(ll);
         update = (ToggleButton) findViewById(R.id.update);
     }
     
@@ -49,12 +55,27 @@ public class MainActivity extends Activity {
     @Override
 	protected void onStart(){
 		super.onStart();
-		me.setName("vanshil");
 		initBluemix();
+		
+		
+		long lastTime = 0;
+		long currTime = System.currentTimeMillis();
+		while(true){
+			currTime = System.currentTimeMillis();
+			if(currTime - lastTime > UPDATE_DELAY){
+				
+				new DownloadFilesTask().execute();
+				lastTime = System.currentTimeMillis();
+			}
+			currTime = System.currentTimeMillis();
+			
+		}
+		
+       
 		//initBackground();
 	}
-
-	public void saveHeart(){
+    
+	public static void saveHeart(){
         Log.d("BLUEMIX", "save initialized");
         me.save().continueWith(new Continuation<IBMDataObject, Void>() {
 	            @Override
@@ -71,33 +92,10 @@ public class MainActivity extends Activity {
 	                return null;
 	            }
 	        });
-        me = new Heart();
+        
 	}
 
-	public void downloadMate(View view){
-        IBMQuery<Heart> query = null;        
-        try {
-            query = IBMQuery.queryForClass(Heart.class);
-        } catch (IBMDataException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        
-        // Query all the Jobs objects from the server
-        query.find().continueWith(new Continuation<List<Heart>, Void>() {
-        	
-                @Override
-                public Void then(Task<List<Heart>> task) throws Exception {
-                    Log.v("download", "before");                    
-                    List<Heart> objectsList = task.getResult();
-                    for(Heart j: objectsList){                       
-                    	mate = j;                         
-                    }                   
-                    Log.v("download", "after");  
-					return null;
-                }
-        });
-	}
+	
     
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -118,3 +116,79 @@ public class MainActivity extends Activity {
         return super.onOptionsItemSelected(item);
     }
 }
+// end main activity *********************************************************
+
+
+
+
+
+
+
+
+class DownloadFilesTask extends AsyncTask<URL, Integer, Long> {
+	
+	public void downloadMate(Heart heart){
+	 Log.v("download", "before1"); 
+     IBMQuery<Heart> query = null;        
+     query = IBMQuery.queryForObjectId("e90f349c-dec1-40b4-a5bd-d69677403ec1");
+     /*
+     try {
+			query = IBMQuery.queryForClass(Heart.class);
+		} catch (IBMDataException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	*/
+     // Query all the Jobs objects from the server
+     query.find().continueWith(new Continuation<List<Heart>, Void>() {
+     	
+             @Override
+             public Void then(Task<List<Heart>> task) throws Exception {
+                 Log.v("download", "before");
+                 
+                 List<Heart> objectsList = task.getResult();
+                 
+                 Log.v("queries retrieved = ", ""+objectsList.size());
+                 
+                 
+                 for(Heart j: objectsList){                       
+                	 MainActivity.me = j;                         
+                 }    
+                                 
+                 Log.d("BLUEMIX name = ", MainActivity.me.getName());
+                 
+                  
+			
+		   		 
+		   	     
+		   	     long testing = 0;
+		   	     onPostExecute(testing);
+		   	     
+		   	  Log.v("download", "end"); 
+		   	  
+		   	  
+			   	  return null;
+             }
+     });
+	}
+	
+    protected void onProgressUpdate(Integer... progress) {
+        //setProgressPercent(progress[0]);
+    	
+    }
+
+    protected void onPostExecute(Long result) {
+        //showDialog("Downloaded " + result + " bytes");
+    	MainActivity.me.setMateName("CHELSEA");
+  	    MainActivity.saveHeart();
+    	
+    }
+
+	@Override
+	protected Long doInBackground(URL... params) {
+		// TODO Auto-generated method stub
+		downloadMate(MainActivity.me);
+		return null;
+	}
+}
+
