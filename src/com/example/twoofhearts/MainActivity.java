@@ -3,6 +3,8 @@ package com.example.twoofhearts;
 import java.util.List;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -21,6 +23,7 @@ import com.ibm.mobile.services.data.IBMQuery;
 public class MainActivity extends Activity {
 	ToggleButton update;
 	public Heart me, mate;
+	Intent mServiceIntent;
 	public static final String 	APPLICATION_ID = "6aeac2ca-d271-45fd-9e8e-479f887fc9ba", 
 			APPLICATION_SECRET = "ac068179f3cf2e41da78b1c9a1f87108fde1577c", 
 			APPLICATION_ROUTE = "http://two-of-hearts.mybluemix.net";
@@ -38,11 +41,17 @@ public class MainActivity extends Activity {
 	        IBMData.initializeService();
 	        Heart.registerSpecialization(Heart.class); //Registering a specialization   
 	    }
-	    
+	    /*private void initBackground(){
+	    	mServiceIntent = new Intent(this, background.class);
+	    	this.startService(mServiceIntent);
+	    }
+	    */
     @Override
 	protected void onStart(){
 		super.onStart();
+		me.setName("vanshil");
 		initBluemix();
+		//initBackground();
 	}
 
 	public void saveHeart(){
